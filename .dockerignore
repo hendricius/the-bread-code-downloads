@@ -1,0 +1,4 @@
+# Ignore everything except nginx.conf and index.html (files are cloned from GitHub during build)
+*
+!nginx.conf
+!index.html
