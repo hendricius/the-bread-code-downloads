@@ -1,20 +1,14 @@
-.PHONY: download upload test-ssh build run stop clean start
+.PHONY: release release-local build run stop clean start
 
-# Load environment variables from .env file
-include .env
-export
+# Pull the latest CI-built book files from the-sourdough-framework and commit
+# them here (deploys to downloads.the-bread-code.io). Requires the `gh` CLI.
+release:
+	./bin/release.sh
 
-test-ssh:
-	@echo "Testing SSH connection to $(SSH_USER)@$(SSH_HOST)..."
-	ssh -o ConnectTimeout=10 -o BatchMode=yes $(SSH_USER)@$(SSH_HOST) "echo 'SSH connection successful!'"
-
-download:
-	rsync -avzP $(SSH_USER)@$(SSH_HOST):"~/downloads/the-sourdough-framework/" ./the-sourdough-framework/
-	rsync -avzP $(SSH_USER)@$(SSH_HOST):"~/downloads/the-sourdough-framework-recipes/" ./the-sourdough-framework-recipes/
-
-upload:
-	rsync -avzP ./the-sourdough-framework/ $(SSH_USER)@$(SSH_HOST):"~/downloads/the-sourdough-framework/"
-	rsync -avzP ./the-sourdough-framework-recipes/ $(SSH_USER)@$(SSH_HOST):"~/downloads/the-sourdough-framework-recipes/"
+# Same, but copy from a local checkout that has already run `make bake`
+# (defaults to ../the-sourdough-framework).
+release-local:
+	./bin/release.sh --local
 
 # Docker commands
 IMAGE_NAME := breadcode-downloads

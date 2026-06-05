@@ -35,51 +35,48 @@ For more details about the project, visit the official repository: [hendricius/t
 
 You can also read the book online at: [the-sourdough-framework.com](https://www.the-sourdough-framework.com)
 
-## Setup
+## Updating the downloads
 
-1. Install Git LFS (required for handling large files):
-   ```bash
-   # macOS (using Homebrew)
-   brew install git-lfs
-   
-   # Ubuntu/Debian
-   sudo apt install git-lfs
-   
-   # Windows (using Chocolatey)
-   choco install git-lfs
-   ```
+The book is built in CI in the
+[the-sourdough-framework](https://github.com/hendricius/the-sourdough-framework)
+repository. To publish a new version you pull the latest built files into this
+repo and push — that redeploys downloads.the-bread-code.io automatically.
 
-2. Initialize Git LFS in the repository:
+### Prerequisites
+
+1. **Git LFS** (the PDFs/EPUBs are stored via LFS):
    ```bash
+   # macOS (Homebrew) / Ubuntu (apt) / Windows (Chocolatey)
+   brew install git-lfs   # or: sudo apt install git-lfs   # or: choco install git-lfs
    git lfs install
    ```
 
-3. Copy the environment template:
+2. **GitHub CLI** (`gh`), authenticated:
    ```bash
-   cp .env.example .env
+   brew install gh        # or your platform's package manager
+   gh auth login
    ```
 
-4. Edit `.env` with your server details:
-   ```
-   SSH_USER=bread
-   SSH_HOST=your-server-ip-or-hostname
-   ```
+### Publish a release
 
-## Usage
+Fetch the newest CI-built PDFs/EPUBs and commit them:
 
-### Test SSH connection
 ```bash
-make test-ssh
+make release
 ```
 
-### Download files from server
-```bash
-make download
-```
+This downloads the latest successful build's artifacts from the framework
+repository, copies them into `the-sourdough-framework/`, shows you the changes,
+and — after you confirm — commits and pushes. The hardcover and TL;DR PDFs are
+maintained separately and left untouched.
 
-### Upload files to server
+If you've built the book locally instead (`make bake` in a checkout of the
+framework repo), copy straight from there:
+
 ```bash
-make upload
+make release-local                              # reads ../the-sourdough-framework/book/release
+# or point at a specific checkout:
+./bin/release.sh --local /path/to/the-sourdough-framework
 ```
 
 ## License
