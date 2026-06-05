@@ -46,11 +46,40 @@ if [[ "$mode" == "ci" ]]; then
     echo "error: the GitHub CLI (gh) is required. See https://cli.github.com" >&2
     exit 1
   }
-  echo "Finding the latest successful '$WORKFLOW' build on $REPO ..."
-  run_id="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" \
-    --branch main --status success --limit 1 \
-    --json databaseId --jq '.[0].databaseId')"
-  [[ -n "$run_id" ]] || { echo "error: no successful build found" >&2; exit 1; }
+  echo "Finding the latest '$WORKFLOW' build with a live '$ARTIFACT' artifact on $REPO ..."
+  # Walk recent successful runs and pick the newest one that still has a
+  # non-expired artifact (GitHub deletes artifacts after ~90 days).
+  run_id=""
+  for id in $(gh run list --repo "$REPO" --workflow "$WORKFLOW" \
+      --branch main --status success --limit 15 \
+      --json databaseId --jq '.[].databaseId'); do
+    has_live="$(gh api "repos/$REPO/actions/runs/$id/artifacts" \
+      --jq "[.artifacts[] | select(.name == \"$ARTIFACT\" and .expired == false)] | length" 2>/dev/null || echo 0)"
+    if [[ "$has_live" -gt 0 ]]; then
+      run_id="$id"
+      break
+    fi
+  done
+  if [[ -z "$run_id" ]]; then
+    cat >&2 <<EOF
+error: no successful build with a live '$ARTIFACT' artifact was found.
+
+This usually means one of:
+  * the release workflow on $REPO is currently failing, so there are no
+    fresh builds, or
+  * the most recent successful build is older than GitHub's ~90-day artifact
+    retention, so its artifacts have expired.
+
+Fix the CI build (or wait for a green run), then try again. In the meantime
+you can publish from a local build instead:
+
+    # in a checkout of the framework repo:
+    cd book && make bake
+    # then back here:
+    ./bin/release.sh --local /path/to/the-sourdough-framework
+EOF
+    exit 1
+  fi
   echo "Downloading artifact '$ARTIFACT' from run $run_id ..."
   gh run download "$run_id" --repo "$REPO" --name "$ARTIFACT" --dir "$tmp"
   src="$tmp"
