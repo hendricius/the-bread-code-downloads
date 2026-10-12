@@ -1,4 +1,4 @@
-.PHONY: release release-local build run stop clean start
+.PHONY: release release-local build run stop clean start pr
 
 # Pull the latest CI-built book files from the-sourdough-framework and commit
 # them here (deploys to downloads.the-bread-code.io). Requires the `gh` CLI.
@@ -31,3 +31,10 @@ clean: stop
 start: stop build
 	@echo "Running at http://localhost:8080"
 	docker run --rm --name $(CONTAINER_NAME) -p 8080:80 $(IMAGE_NAME)
+
+# Push the current branch and open a pull request against main. Never pushes
+# main itself: every change reaches downloads.the-bread-code.io through a PR.
+pr:
+	@branch=$$(git branch --show-current); \
+	if [ "$$branch" = "main" ]; then echo "make pr: switch to a branch first" >&2; exit 1; fi; \
+	git push -u origin "$$branch" && gh pr create --base main --fill
